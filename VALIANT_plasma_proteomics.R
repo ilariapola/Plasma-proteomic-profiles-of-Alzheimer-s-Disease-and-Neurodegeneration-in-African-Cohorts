@@ -17,7 +17,7 @@ render_mean_sd <- function(x) {
        sprintf("%s (&plusmn; %s)", MEAN, SD))
 }
 
-table1(~ sex + age + years_edu + AB_pos| DX_AB, 
+table1(~ sex + age + years_edu + AB_status| DX_AB, 
        data = final, 
        render.continuous = render_mean_sd)
 
@@ -41,12 +41,12 @@ ex <- final[, c(85:207)] #85:207 represent the columns of the proteomic data
 results_list <- list()
 
 for (protein in colnames(ex)) {
-  model <- lm(as.formula(paste(protein, "~ AB_pos + age + sex + average_protein")), data = final)
+  model <- lm(as.formula(paste(protein, "~ AB_status + age + sex + average_protein")), data = final)
   
   model_results <- tidy(model)
   
   model_results_filtered <- model_results %>%
-    dplyr::filter(term == "AB_pos1") %>%
+    dplyr::filter(term == "AB_status") %>%
     dplyr::mutate(Protein = protein,        
                   logFC = estimate,        
                   log10P = -log10(p.value)) 
@@ -132,25 +132,25 @@ print(vc)
 
 # Amyloid-negative subgroup
 df_sub <- final %>%
-  dplyr::filter(AB_pos == 0)
+  dplyr::filter(AB_status == 0)
 
 # Amyloid-positive subgroup
 # df_sub <- final %>%
-#   dplyr::filter(AB_pos == 1)
+#   dplyr::filter(AB_status == 1)
 
 # Select proteomic variables.
 # Columns 85:207 correspond to protein measurements.
 ex <- df_sub[, c(85:207)]
 
 # Run one linear model per protein.
-# Main exposure: CUCI
-# CUCI compares cognitively impaired versus cognitively unimpaired participants
+# Main exposure: CU_CI (as 0 and 1 for cognitively unimparied and 1 as cognitively impaired)
+# CU_CI compares cognitively impaired versus cognitively unimpaired participants
 # within the selected amyloid subgroup.
 results_list <- list()
 
 for (protein in colnames(ex)) {
   model <- lm(
-    as.formula(paste(protein, "~ CUCI + age + sex + average_protein")),
+    as.formula(paste(protein, "~ CU_CI + age + sex + average_protein")),
     data = df_sub
   )
   
@@ -158,7 +158,7 @@ for (protein in colnames(ex)) {
   
   # Extract only the CUCI group comparison
   model_results_filtered <- model_results %>%
-    dplyr::filter(term == "CUCI") %>%
+    dplyr::filter(term == "CU_CI") %>%
     dplyr::mutate(
       Protein = protein,
       logFC = estimate,
@@ -305,22 +305,22 @@ proteins_keep <- c(
 
 # Comorbidity exposures tested
 exposures <- c(
-  "g_heart_disease",
-  "g_lipid_metabolism",
-  "g_comorbidities",
-  "g_inflammatory",
-  "g_infectious",
+  "heart_disease",
+  "lipid_metabolism",
+  "comorbidities", #indicating other pathologies as described in the methods 
+  "inflammatory",
+  "infectious",
   "cholesterol"
 )
 
 # Covariates included in each model
-covariates <- c("AB_pos", "age", "sex", "average_protein")
+covariates <- c("AB_status", "age", "sex", "average_protein")
 
 # Full model predictors
 predictors <- c(exposures, covariates)
 
 # For each protein, the following linear model was fitted:
-# protein ~ comorbidity exposure + AB_pos + age + sex + average_protein
+# protein ~ comorbidity exposure + AB_status + age + sex + average_protein
 #
 # The model includes all comorbidity exposures simultaneously.
 # AB_pos compares amyloid-positive versus amyloid-negative participants.
@@ -354,20 +354,20 @@ all_results <- map_dfr(proteins_keep, fit_one) %>%
 
 exposure_labels <- c(
   cholesterol         = "Cholesterol",
-  g_heart_disease    = "Heart diseases",
-  g_lipid_metabolism = "Metabolic diseases",
-  g_comorbidities    = "Other conditions",
-  g_inflammatory     = "Respiratory diseases",
-  g_infectious       = "Infectious diseases"
+  heart_disease    = "Heart diseases",
+  lipid_metabolism = "Metabolic diseases",
+  comorbidities    = "Other conditions",
+  inflammatory     = "Respiratory diseases",
+  infectious       = "Infectious diseases"
 )
 
 pal <- c(
   cholesterol        = "#3b8b4f",
-  g_heart_disease    = "#db4260",
-  g_lipid_metabolism = "#555876",
-  g_comorbidities    = "#cbb8a9",
-  g_inflammatory     = "#e7a35b",
-  g_infectious       = "#8c9e9a"
+  heart_disease    = "#db4260",
+  lipid_metabolism = "#555876",
+  comorbidities    = "#cbb8a9",
+  inflammatory     = "#e7a35b",
+  infectious       = "#8c9e9a"
 )
 
 plot_beta <- all_results %>%
@@ -382,11 +382,11 @@ plot_beta <- all_results %>%
       Exposure,
       levels = c(
         "cholesterol",
-        "g_heart_disease",
-        "g_infectious",
-        "g_inflammatory",
-        "g_lipid_metabolism",
-        "g_comorbidities"
+        "heart_disease",
+        "infectious",
+        "inflammatory",
+        "lipid_metabolism",
+        "comorbidities"
       )
     )
   ) %>%
