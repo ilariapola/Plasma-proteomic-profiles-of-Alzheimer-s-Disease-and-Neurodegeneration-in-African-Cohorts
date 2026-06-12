@@ -307,7 +307,7 @@ proteins_keep <- c(
 exposures <- c(
   "heart_disease",
   "lipid_metabolism",
-  "comorbidities", #indicating other pathologies as described in the methods 
+  "other_conditions", 
   "inflammatory",
   "infectious",
   "cholesterol"
@@ -386,7 +386,7 @@ plot_beta <- all_results %>%
         "infectious",
         "inflammatory",
         "lipid_metabolism",
-        "comorbidities"
+        "other_conditions"
       )
     )
   ) %>%
